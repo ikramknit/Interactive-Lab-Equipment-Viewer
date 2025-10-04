@@ -49,7 +49,7 @@ const App: React.FC = () => {
       if (imageResult.status === 'fulfilled') {
         setImageUrl(imageResult.value);
       } else {
-        setImageError('Failed to generate image.');
+        setImageError('Failed to find an image.');
         console.error(imageResult.reason);
       }
 

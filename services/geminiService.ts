@@ -26,27 +26,26 @@ export async function getEquipmentDescription(equipmentName: string): Promise<st
 
 export async function getEquipmentImage(equipmentName: string): Promise<string> {
   try {
-    const prompt = `A professional, high-resolution 3D studio render of a single "${equipmentName}" on a plain, clean, light gray background. The object should be clearly visible and centered. Photorealistic lighting.`;
+    const prompt = `Find a direct URL to a high-quality, public-domain or royalty-free image of a single "${equipmentName}" on a clean, preferably white or light gray, background. Return only the raw image URL and absolutely nothing else.`;
     
-    const response = await ai.models.generateImages({
-      model: 'imagen-4.0-generate-001',
-      prompt: prompt,
-      config: {
-        numberOfImages: 1,
-        outputMimeType: 'image/jpeg',
-        aspectRatio: '4:3',
-      },
+    const response = await ai.models.generateContent({
+      model: 'gemini-2.5-flash',
+      contents: prompt,
     });
 
-    if (response.generatedImages && response.generatedImages.length > 0) {
-      const base64ImageBytes: string = response.generatedImages[0].image.imageBytes;
-      return `data:image/jpeg;base64,${base64ImageBytes}`;
+    const url = response.text.trim();
+    
+    // A simple check to see if the response looks like a URL.
+    if (url.startsWith('http://') || url.startsWith('https://')) {
+        return url;
     } else {
-      throw new Error("No image was generated.");
+        console.error(`Gemini did not return a valid URL for "${equipmentName}". Response: "${url}"`);
+        throw new Error(`Could not find a valid image URL for "${equipmentName}".`);
     }
 
   } catch (error) {
-    console.error("Error generating image from Gemini:", error);
-    throw new Error("Failed to generate image with the Gemini API.");
+    console.error("Error fetching image URL from Gemini:", error);
+    // Re-throw the error to be handled by the calling component
+    throw error;
   }
 }
