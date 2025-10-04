@@ -1,0 +1,5 @@
+{
+  "name": "Interactive Lab Equipment Viewer",
+  "description": "An interactive application to browse a list of laboratory equipment. Click on an item to view a representative image and a dynamically generated description from Gemini.",
+  "requestFramePermissions": []
+}
