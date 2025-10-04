@@ -2,7 +2,7 @@
 import React, { useState, useCallback } from 'react';
 import { EQUIPMENT_LIST } from './constants';
 import type { Equipment } from './types';
-import { getEquipmentDescription } from './services/geminiService';
+import { getEquipmentDescription, getEquipmentImage } from './services/geminiService';
 import EquipmentList from './components/EquipmentList';
 import EquipmentDetail from './components/EquipmentDetail';
 import { LabIcon } from './components/icons';
@@ -13,22 +13,55 @@ const App: React.FC = () => {
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
+  const [isImageLoading, setIsImageLoading] = useState<boolean>(false);
+  const [imageError, setImageError] = useState<string | null>(null);
+
   const handleSelectEquipment = useCallback(async (equipment: Equipment) => {
+    if (selectedEquipment?.name === equipment.name) return;
+
     setSelectedEquipment(equipment);
+    
+    // Reset states
     setIsLoading(true);
+    setIsImageLoading(true);
     setError(null);
+    setImageError(null);
     setDescription('');
+    setImageUrl(null);
     
     try {
-      const desc = await getEquipmentDescription(equipment.name);
-      setDescription(desc);
+      // Fetch description and image concurrently
+      const [descResult, imageResult] = await Promise.allSettled([
+        getEquipmentDescription(equipment.name),
+        getEquipmentImage(equipment.name),
+      ]);
+
+      // Handle description result
+      if (descResult.status === 'fulfilled') {
+        setDescription(descResult.value);
+      } else {
+        setError('Failed to fetch description.');
+        console.error(descResult.reason);
+      }
+
+      // Handle image result
+      if (imageResult.status === 'fulfilled') {
+        setImageUrl(imageResult.value);
+      } else {
+        setImageError('Failed to generate image.');
+        console.error(imageResult.reason);
+      }
+
     } catch (err) {
-      setError('Failed to fetch description. Please try again.');
+      setError('An unexpected error occurred.');
+      setImageError('An unexpected error occurred.');
       console.error(err);
     } finally {
       setIsLoading(false);
+      setIsImageLoading(false);
     }
-  }, []);
+  }, [selectedEquipment]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 to-slate-800 font-sans">
@@ -59,6 +92,9 @@ const App: React.FC = () => {
             description={description}
             isLoading={isLoading}
             error={error}
+            imageUrl={imageUrl}
+            isImageLoading={isImageLoading}
+            imageError={imageError}
           />
         </div>
       </main>
